@@ -12,18 +12,19 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/PratSins/FrameVerse-Backend/pkg/gcs"
+	gemini "github.com/PratSins/FrameVerse-Backend/pkg/gemini"
 )
 
 type Service struct {
 	dao    *DAO
 	gcs    *gcs.Client
-	gemini *GeminiClient
+	gemini *gemini.GeminiClient
 }
 
 func NewService(
 	dao *DAO,
 	gcsClient *gcs.Client,
-	geminiClient *GeminiClient,
+	geminiClient *gemini.GeminiClient,
 ) *Service {
 
 	return &Service{

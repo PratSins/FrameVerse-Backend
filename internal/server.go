@@ -7,6 +7,7 @@ import (
 	"github.com/PratSins/FrameVerse-Backend/config"
 	"github.com/PratSins/FrameVerse-Backend/internal/toonify"
 	appgcs "github.com/PratSins/FrameVerse-Backend/pkg/gcs"
+	gemini "github.com/PratSins/FrameVerse-Backend/pkg/gemini"
 	appmongo "github.com/PratSins/FrameVerse-Backend/pkg/mongo"
 )
 
@@ -35,7 +36,7 @@ func NewServer(
 		return nil, nil, err
 	}
 
-	geminiClient, err := toonify.NewGeminiClient(
+	geminiClient, err := gemini.NewGeminiClient(
 		ctx,
 		cfg.GeminiAPIKey,
 		cfg.GeminiModel,
