@@ -31,11 +31,7 @@ func (c *Controller) CreateUploadURL(w http.ResponseWriter, r *http.Request) {
 	var req CreateUploadRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(
-			w,
-			"invalid request",
-			http.StatusBadRequest,
-		)
+		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
 	}
 
@@ -47,55 +43,29 @@ func (c *Controller) CreateUploadURL(w http.ResponseWriter, r *http.Request) {
 		req.Style = "anime"
 	}
 
-	result, err := c.service.CreateUpload(
-		r.Context(),
-		req.ContentType,
-		req.Style,
-	)
+	result, err := c.service.CreateUpload(r.Context(), req.ContentType, req.Style)
 
 	if err != nil {
-		http.Error(
-			w,
-			err.Error(),
-			http.StatusInternalServerError,
-		)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	writeJSON(
-		w,
-		http.StatusOK,
-		result,
-	)
+	writeJSON(w, http.StatusOK, result)
 }
 
-func (c *Controller) Process(
-	w http.ResponseWriter,
-	r *http.Request,
-) {
+func (c *Controller) Process(w http.ResponseWriter, r *http.Request) {
 	jobID := chi.URLParam(r, "jobID")
 
 	if jobID == "" {
-		http.Error(
-			w,
-			"missing job id",
-			http.StatusBadRequest,
-		)
+		http.Error(w, "missing job id", http.StatusBadRequest)
 		return
 	}
 
 	// MVP:
 	// run processing in the background.
 	go func() {
-		if err := c.service.Process(
-			context.Background(),
-			jobID,
-		); err != nil {
-			log.Printf(
-				"toonify job %s failed: %v",
-				jobID,
-				err,
-			)
+		if err := c.service.Process(context.Background(), jobID); err != nil {
+			log.Printf("toonify job %s failed: %v", jobID, err)
 		}
 	}()
 
@@ -109,23 +79,13 @@ func (c *Controller) Process(
 	)
 }
 
-func (c *Controller) GetJob(
-	w http.ResponseWriter,
-	r *http.Request,
-) {
+func (c *Controller) GetJob(w http.ResponseWriter, r *http.Request) {
 	jobID := chi.URLParam(r, "jobID")
 
-	job, err := c.service.dao.Get(
-		r.Context(),
-		jobID,
-	)
+	job, err := c.service.dao.Get(r.Context(), jobID)
 
 	if err != nil {
-		http.Error(
-			w,
-			"job not found",
-			http.StatusNotFound,
-		)
+		http.Error(w, "job not found", http.StatusNotFound)
 		return
 	}
 
@@ -137,32 +97,18 @@ func (c *Controller) GetJob(
 	}
 
 	if job.Status == StatusCompleted {
-		url, err := c.service.gcs.GenerateDownloadURL(
-			job.OutputObject,
-		)
+		url, err := c.service.gcs.GenerateDownloadURL(job.OutputObject)
 
 		if err == nil {
 			response.DownloadURL = url
 		}
 	}
 
-	writeJSON(
-		w,
-		http.StatusOK,
-		response,
-	)
+	writeJSON(w, http.StatusOK, response)
 }
 
-func writeJSON(
-	w http.ResponseWriter,
-	status int,
-	value interface{},
-) {
-	w.Header().Set(
-		"Content-Type",
-		"application/json",
-	)
-
+func writeJSON(w http.ResponseWriter, status int, value interface{}) {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 
 	_ = json.NewEncoder(w).Encode(value)

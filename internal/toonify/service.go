@@ -60,10 +60,7 @@ func (s *Service) CreateUpload(
 		return nil, err
 	}
 
-	url, err := s.gcs.GenerateUploadURL(
-		objectName,
-		contentType,
-	)
+	url, err := s.gcs.GenerateUploadURL(objectName, contentType)
 
 	if err != nil {
 		return nil, err
@@ -86,12 +83,7 @@ func (s *Service) Process(
 		return err
 	}
 
-	if err := s.dao.UpdateStatus(
-		ctx,
-		jobID,
-		StatusProcessing,
-		"",
-	); err != nil {
+	if err := s.dao.UpdateStatus(ctx, jobID, StatusProcessing, ""); err != nil {
 		return err
 	}
 
@@ -102,12 +94,7 @@ func (s *Service) Process(
 
 	defer os.Remove(inputPath)
 
-	if err := s.gcs.Download(
-		ctx,
-		job.InputObject,
-		inputPath,
-	); err != nil {
-
+	if err := s.gcs.Download(ctx, job.InputObject, inputPath); err != nil {
 		_ = s.dao.UpdateStatus(
 			ctx,
 			jobID,
@@ -118,11 +105,7 @@ func (s *Service) Process(
 		return err
 	}
 
-	geminiOutput, err := s.gemini.Toonify(
-		ctx,
-		inputPath,
-		job.Style,
-	)
+	geminiOutput, err := s.gemini.Toonify(ctx, inputPath, job.Style)
 
 	if err != nil {
 		_ = s.dao.UpdateStatus(
@@ -149,12 +132,7 @@ func (s *Service) Process(
 
 	defer os.Remove(outputPath)
 
-	if err := downloadFile(
-		ctx,
-		geminiOutput,
-		outputPath,
-	); err != nil {
-
+	if err := downloadFile(ctx, geminiOutput, outputPath); err != nil {
 		_ = s.dao.UpdateStatus(
 			ctx,
 			jobID,
@@ -165,13 +143,7 @@ func (s *Service) Process(
 		return err
 	}
 
-	if err := s.gcs.Upload(
-		ctx,
-		outputObject,
-		outputPath,
-		"video/mp4",
-	); err != nil {
-
+	if err := s.gcs.Upload(ctx, outputObject, outputPath, "video/mp4"); err != nil {
 		_ = s.dao.UpdateStatus(
 			ctx,
 			jobID,
@@ -205,13 +177,7 @@ func downloadFile(
 	destination string,
 ) error {
 
-	req, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodGet,
-		url,
-		nil,
-	)
-
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return err
 	}
@@ -224,10 +190,7 @@ func downloadFile(
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf(
-			"download failed: HTTP %d",
-			resp.StatusCode,
-		)
+		return fmt.Errorf("download failed: HTTP %d", resp.StatusCode)
 	}
 
 	file, err := os.Create(destination)
