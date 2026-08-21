@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strings"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type Controller struct {
@@ -18,11 +19,15 @@ func NewController(service *Service) *Controller {
 	}
 }
 
-func (c *Controller) CreateUploadURL(
-	w http.ResponseWriter,
-	r *http.Request,
-) {
+func (c *Controller) MountRoutes(r chi.Router) {
+	r.Route("/api/v1/toonify", func(r chi.Router) {
+		r.Post("/upload-url", c.CreateUploadURL)
+		r.Post("/{jobID}/process", c.Process)
+		r.Get("/{jobID}", c.GetJob)
+	})
+}
 
+func (c *Controller) CreateUploadURL(w http.ResponseWriter, r *http.Request) {
 	var req CreateUploadRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -68,8 +73,7 @@ func (c *Controller) Process(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-
-	jobID := extractJobID(r.URL.Path)
+	jobID := chi.URLParam(r, "jobID")
 
 	if jobID == "" {
 		http.Error(
@@ -109,8 +113,7 @@ func (c *Controller) GetJob(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-
-	jobID := extractJobID(r.URL.Path)
+	jobID := chi.URLParam(r, "jobID")
 
 	job, err := c.service.dao.Get(
 		r.Context(),
@@ -155,7 +158,6 @@ func writeJSON(
 	status int,
 	value interface{},
 ) {
-
 	w.Header().Set(
 		"Content-Type",
 		"application/json",
@@ -164,18 +166,4 @@ func writeJSON(
 	w.WriteHeader(status)
 
 	_ = json.NewEncoder(w).Encode(value)
-}
-
-func extractJobID(path string) string {
-
-	parts := strings.Split(
-		strings.Trim(path, "/"),
-		"/",
-	)
-
-	if len(parts) < 4 {
-		return ""
-	}
-
-	return parts[3]
 }

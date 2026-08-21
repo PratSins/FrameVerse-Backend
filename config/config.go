@@ -32,17 +32,14 @@ func Load() *Config {
 
 func getEnv(key string, fallback string) string {
 	value := os.Getenv(key)
-
 	if value == "" {
 		return fallback
 	}
-
 	return value
 }
 
 func getEnvInt(key string, fallback int) int {
 	value := os.Getenv(key)
-
 	if value == "" {
 		return fallback
 	}
