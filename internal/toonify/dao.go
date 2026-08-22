@@ -21,20 +21,12 @@ func NewDAO(client *appmongo.Client) *DAO {
 	}
 }
 
-func (d *DAO) Create(
-	ctx context.Context,
-	job *ToonifyJob,
-) error {
-
+func (d *DAO) Create(ctx context.Context, job *ToonifyJob) error {
 	_, err := d.collection.InsertOne(ctx, job)
-
 	return err
 }
 
-func (d *DAO) Get(
-	ctx context.Context,
-	jobID string,
-) (*ToonifyJob, error) {
+func (d *DAO) Get(ctx context.Context, jobID string) (*ToonifyJob, error) {
 
 	var job ToonifyJob
 
