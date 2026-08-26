@@ -27,7 +27,7 @@ func NewServer(ctx context.Context, cfg *config.Config) (*http.Server, func() er
 		return nil, nil, err
 	}
 
-	geminiClient, err := gemini.NewGeminiClient(ctx, cfg.GeminiAPIKey, cfg.GeminiModel)
+	geminiClient, err := gemini.NewGeminiClient(ctx, cfg.GCPProjectID, cfg.GCPLocation, cfg.GeminiModel)
 	if err != nil {
 		gcsClient.Close()
 		mongoClient.Close(ctx)

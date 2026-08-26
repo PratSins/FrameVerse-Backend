@@ -31,6 +31,10 @@ func (c *Client) Close() error {
 	return c.client.Close()
 }
 
+func (c *Client) Bucket() string {
+	return c.bucket
+}
+
 func (c *Client) GenerateUploadURL(
 	objectName string,
 	contentType string,
