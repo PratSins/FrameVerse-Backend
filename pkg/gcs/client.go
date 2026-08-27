@@ -81,11 +81,7 @@ func (c *Client) Download(
 	destination string,
 ) error {
 
-	reader, err := c.client.
-		Bucket(c.bucket).
-		Object(objectName).
-		NewReader(ctx)
-
+	reader, err := c.client.Bucket(c.bucket).Object(objectName).NewReader(ctx)
 	if err != nil {
 		return fmt.Errorf("create GCS reader: %w", err)
 	}
@@ -121,11 +117,7 @@ func (c *Client) Upload(
 
 	defer file.Close()
 
-	writer := c.client.
-		Bucket(c.bucket).
-		Object(objectName).
-		NewWriter(ctx)
-
+	writer := c.client.Bucket(c.bucket).Object(objectName).NewWriter(ctx)
 	writer.ContentType = contentType
 
 	if _, err := io.Copy(writer, file); err != nil {

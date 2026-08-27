@@ -39,11 +39,7 @@ func (s *Service) CreateUpload(
 
 	jobID := uuid.New().String()
 
-	objectName := fmt.Sprintf(
-		"uploads/%s/%s.mp4",
-		jobID,
-		jobID,
-	)
+	objectName := fmt.Sprintf("uploads/%s/%s.mp4", jobID, jobID)
 
 	job := &ToonifyJob{
 		ID:          jobID,
@@ -58,7 +54,6 @@ func (s *Service) CreateUpload(
 	}
 
 	url, err := s.gcs.GenerateUploadURL(objectName, contentType)
-
 	if err != nil {
 		return nil, err
 	}
@@ -89,13 +84,7 @@ func (s *Service) Process(
 
 	geminiOutput, err := s.gemini.Toonify(ctx, inputGCSURI, outputGCSURI, job.Style)
 	if err != nil {
-		_ = s.dao.UpdateStatus(
-			ctx,
-			jobID,
-			StatusFailed,
-			err.Error(),
-		)
-
+		_ = s.dao.UpdateStatus(ctx, jobID, StatusFailed, err.Error())
 		return err
 	}
 
