@@ -8,7 +8,8 @@ import (
 type Config struct {
 	Port string
 
-	GeminiAPIKey string
+	GCPProjectID string
+	GCPLocation  string
 	GeminiModel  string
 
 	GCSBucketName string
@@ -22,10 +23,12 @@ func Load() *Config {
 
 	return &Config{
 		Port:          port,
-		GeminiAPIKey:  os.Getenv("GEMINI_API_KEY"),
+		GCPProjectID:  getEnv("GCP_PROJECT_ID", "swift-delight-441118-c4"),
+		GCPLocation:   getEnv("GCP_LOCATION", "global"),
 		GeminiModel:   getEnv("GEMINI_MODEL", "gemini-omni-flash-preview"),
-		GCSBucketName: os.Getenv("GCS_BUCKET_NAME"),
+		GCSBucketName: getEnv("GCS_BUCKET_NAME", "frameverse-videos-gfh"),
 		MongoURI:      os.Getenv("MONGO_URI"),
+		// MongoURI:      getEnv("MONGO_URI", "mongodb://localhost:27017"),
 		MongoDatabase: getEnv("MONGO_DATABASE", "frameverse"),
 	}
 }

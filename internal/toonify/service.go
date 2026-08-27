@@ -3,10 +3,7 @@ package toonify
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
-	"os"
-	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -42,11 +39,7 @@ func (s *Service) CreateUpload(
 
 	jobID := uuid.New().String()
 
-	objectName := fmt.Sprintf(
-		"uploads/%s/%s.mp4",
-		jobID,
-		jobID,
-	)
+	objectName := fmt.Sprintf("uploads/%s/%s.mp4", jobID, jobID)
 
 	job := &ToonifyJob{
 		ID:          jobID,
@@ -61,7 +54,6 @@ func (s *Service) CreateUpload(
 	}
 
 	url, err := s.gcs.GenerateUploadURL(objectName, contentType)
-
 	if err != nil {
 		return nil, err
 	}
@@ -87,71 +79,18 @@ func (s *Service) Process(
 		return err
 	}
 
-	inputPath := filepath.Join(
-		os.TempDir(),
-		jobID+"-input.mp4",
-	)
+	inputGCSURI := fmt.Sprintf("gs://%s/%s", s.gcs.Bucket(), job.InputObject)
+	outputGCSURI := fmt.Sprintf("gs://%s/processed/%s/", s.gcs.Bucket(), jobID)
 
-	defer os.Remove(inputPath)
-
-	if err := s.gcs.Download(ctx, job.InputObject, inputPath); err != nil {
-		_ = s.dao.UpdateStatus(
-			ctx,
-			jobID,
-			StatusFailed,
-			err.Error(),
-		)
-
-		return err
-	}
-
-	geminiOutput, err := s.gemini.Toonify(ctx, inputPath, job.Style)
-
+	geminiOutput, err := s.gemini.Toonify(ctx, inputGCSURI, outputGCSURI, job.Style)
 	if err != nil {
-		_ = s.dao.UpdateStatus(
-			ctx,
-			jobID,
-			StatusFailed,
-			err.Error(),
-		)
-
+		_ = s.dao.UpdateStatus(ctx, jobID, StatusFailed, err.Error())
 		return err
 	}
 
-	outputObject := fmt.Sprintf(
-		"processed/%s/%s.mp4",
-		jobID,
-		jobID,
-	)
-
-	// If Gemini returned a URL, download it.
-	outputPath := filepath.Join(
-		os.TempDir(),
-		jobID+"-output.mp4",
-	)
-
-	defer os.Remove(outputPath)
-
-	if err := downloadFile(ctx, geminiOutput, outputPath); err != nil {
-		_ = s.dao.UpdateStatus(
-			ctx,
-			jobID,
-			StatusFailed,
-			err.Error(),
-		)
-
-		return err
-	}
-
-	if err := s.gcs.Upload(ctx, outputObject, outputPath, "video/mp4"); err != nil {
-		_ = s.dao.UpdateStatus(
-			ctx,
-			jobID,
-			StatusFailed,
-			err.Error(),
-		)
-
-		return err
+	outputObject := strings.TrimPrefix(geminiOutput, fmt.Sprintf("gs://%s/", s.gcs.Bucket()))
+	if outputObject == "" || outputObject == geminiOutput {
+		outputObject = fmt.Sprintf("processed/%s/%s.mp4", jobID, jobID)
 	}
 
 	_, err = s.dao.collection.UpdateOne(
@@ -167,40 +106,6 @@ func (s *Service) Process(
 			},
 		},
 	)
-
-	return err
-}
-
-func downloadFile(
-	ctx context.Context,
-	url string,
-	destination string,
-) error {
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return err
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("download failed: HTTP %d", resp.StatusCode)
-	}
-
-	file, err := os.Create(destination)
-	if err != nil {
-		return err
-	}
-
-	defer file.Close()
-
-	_, err = io.Copy(file, resp.Body)
 
 	return err
 }

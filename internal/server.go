@@ -27,7 +27,7 @@ func NewServer(ctx context.Context, cfg *config.Config) (*http.Server, func() er
 		return nil, nil, err
 	}
 
-	geminiClient, err := gemini.NewGeminiClient(ctx, cfg.GeminiAPIKey, cfg.GeminiModel)
+	geminiClient, err := gemini.NewGeminiClient(ctx, cfg.GCPProjectID, cfg.GCPLocation, cfg.GeminiModel)
 	if err != nil {
 		gcsClient.Close()
 		mongoClient.Close(ctx)
@@ -41,6 +41,19 @@ func NewServer(ctx context.Context, cfg *config.Config) (*http.Server, func() er
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, X-CSRF-Token")
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	})
 
 	toonifyController.MountRoutes(r)
 
