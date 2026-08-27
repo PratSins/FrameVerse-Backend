@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -93,19 +94,43 @@ func NewGeminiClient(
 	}, nil
 }
 
+const CommonPromptSuffix = `This is a strict pixel-aligned edit of the source video: keep the same pose, motion, timing, clothing colors, and background.
+
+The camera must not change — no zoom, no crop, no recentering, and no change to the field of view.
+
+The person's face and body must stay at exactly the same position and size in the frame as the source.
+
+Eyes, nose, and mouth must remain at the same screen coordinates in every frame.
+
+Match the facial expression exactly, frame by frame.
+
+Preserve the exact degree of mouth openness at every moment — if the mouth is slightly open and still, keep it slightly open and still; do not close it, and do not add talking or any mouth movement that is not in the source.
+
+Mirror blinks, gaze direction, and eyebrow position at the same moments as the source.
+
+Change only the visual style, nothing about the geometry, composition, or performance.`
+
+func BuildPrompt(style string) string {
+	var stylePrompt string
+	switch strings.ToLower(strings.TrimSpace(style)) {
+	case "3d", "3d_animated", "3d_animation", "3d_movie", "pixar":
+		stylePrompt = "Transform the person into a 3D animated movie character (stylized CGI animation look, expressive big eyes, soft lighting)."
+	case "anime", "":
+		stylePrompt = "Redraw the video as a hand-drawn anime with clean line art, cel shading, and vibrant colors."
+	default:
+		stylePrompt = fmt.Sprintf("Redraw the video in %s style.", style)
+	}
+
+	return fmt.Sprintf("%s\n\n%s", stylePrompt, CommonPromptSuffix)
+}
+
 func (g *GeminiClient) Toonify(
 	ctx context.Context,
 	inputGCSURI string,
 	outputGCSURI string,
 	style string,
 ) (string, error) {
-	prompt := fmt.Sprintf(
-		"Convert this video into a %s style cartoon. "+
-			"Preserve the original subject, actions, camera movement, "+
-			"timing and composition as much as possible. "+
-			"Keep everything else the same.",
-		style,
-	)
+	prompt := BuildPrompt(style)
 
 	reqBody := omniRequest{
 		Model: g.model,
