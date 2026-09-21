@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/PratSins/FrameVerse-Backend/pkg/middleware"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -43,7 +44,8 @@ func (c *Controller) CreateUploadURL(w http.ResponseWriter, r *http.Request) {
 		req.Style = "anime"
 	}
 
-	result, err := c.service.CreateUpload(r.Context(), req.ContentType, req.Style)
+	userID := middleware.GetUserID(r.Context())
+	result, err := c.service.CreateUpload(r.Context(), req.ContentType, req.Style, userID)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

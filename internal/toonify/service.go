@@ -35,6 +35,7 @@ func (s *Service) CreateUpload(
 	ctx context.Context,
 	contentType string,
 	style string,
+	userID string,
 ) (*CreateUploadResponse, error) {
 
 	jobID := uuid.New().String()
@@ -43,6 +44,7 @@ func (s *Service) CreateUpload(
 
 	job := &ToonifyJob{
 		ID:          jobID,
+		UserID:      userID,
 		Status:      StatusPending,
 		Style:       style,
 		InputObject: objectName,
