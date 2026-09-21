@@ -14,6 +14,8 @@ const (
 type ToonifyJob struct {
 	ID string `json:"id" bson:"_id"`
 
+	UserID string `json:"user_id,omitempty" bson:"user_id,omitempty"`
+
 	Status JobStatus `json:"status" bson:"status"`
 
 	Style string `json:"style" bson:"style"`
