@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frameverse-backend
+  labels:
+    app: frameverse-backend
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: frameverse-backend
+  template:
+    metadata:
+      labels:
+        app: frameverse-backend
+    spec:
+      containers:
+        - name: backend
+          image: asia-south1-docker.pkg.dev/swift-delight-441118-c4/cloud-run-source-deploy/frameverse-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: ENVIRONMENT
+              value: "production"
+            - name: GCP_PROJECT_ID
+              value: "swift-delight-441118-c4"
+            - name: GCP_LOCATION
+              value: "global"
+            - name: GEMINI_MODEL
+              value: "gemini-omni-flash-preview"
+            - name: GCS_BUCKET_NAME
+              value: "frameverse-videos-gfh"
+            - name: MONGO_DATABASE
+              value: "frameverse"
+            - name: AUTH_JWKS_URL
+              value: "http://frameverse-auth.default.svc.cluster.local:8080/.well-known/jwks.json"
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: frameverse-backend-secret
+                  key: mongo-uri
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frameverse-backend
+  labels:
+    app: frameverse-backend
+spec:
+  type: ClusterIP
+  selector:
+    app: frameverse-backend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080

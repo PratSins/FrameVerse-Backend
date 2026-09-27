@@ -61,14 +61,19 @@ func NewServer(ctx context.Context, cfg *config.Config) (*http.Server, func() er
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(appmiddleware.CORS())
-	r.Use(appmiddleware.OptionalAuth(authClient))
 
-	// 4. Mount Routes
-	toonifyController.MountRoutes(r)
-	vChatController.MountRoutes(r, appmiddleware.OptionalAuth(authClient))
+	// 4. Mount Routes with MANDATORY Authentication
+	authGuard := appmiddleware.RequireAuth(authClient)
+	toonifyController.MountRoutes(r, authGuard)
+	vChatController.MountRoutes(r, authGuard)
 
-	// 5. Health Check Endpoint
+	// 5. Health Check Endpoints (Public)
 	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok","service":"frameverse-backend"}`))
+	})
+	r.Get("/api/v1/backend/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"status":"ok","service":"frameverse-backend"}`))
@@ -80,10 +85,8 @@ func NewServer(ctx context.Context, cfg *config.Config) (*http.Server, func() er
 	}
 
 	cleanup := func() error {
-		if err := gcsClient.Close(); err != nil {
-			return err
-		}
-		return mongoClient.Close(context.Background())
+		gcsClient.Close()
+		return mongoClient.Close(ctx)
 	}
 
 	return server, cleanup, nil

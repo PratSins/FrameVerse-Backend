@@ -2,12 +2,13 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "FrameVerse",
+            "name": "FrameVerse Backend",
             "type": "go",
             "request": "launch",
             "mode": "debug",
             "program": "${workspaceFolder}/cmd/main.go",
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }

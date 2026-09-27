@@ -20,8 +20,9 @@ func NewController(service *Service) *Controller {
 	}
 }
 
-func (c *Controller) MountRoutes(r chi.Router) {
+func (c *Controller) MountRoutes(r chi.Router, authGuard func(http.Handler) http.Handler) {
 	r.Route("/api/v1/toonify", func(r chi.Router) {
+		r.Use(authGuard)
 		r.Post("/upload-url", c.CreateUploadURL)
 		r.Post("/{jobID}/process", c.Process)
 		r.Get("/{jobID}", c.GetJob)
@@ -45,8 +46,12 @@ func (c *Controller) CreateUploadURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := middleware.GetUserID(r.Context())
-	result, err := c.service.CreateUpload(r.Context(), req.ContentType, req.Style, userID)
+	if userID == "" {
+		http.Error(w, `{"error":"unauthorized: user ID not found in token"}`, http.StatusUnauthorized)
+		return
+	}
 
+	result, err := c.service.CreateUpload(r.Context(), req.ContentType, req.Style, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -63,8 +68,6 @@ func (c *Controller) Process(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// MVP:
-	// run processing in the background.
 	go func() {
 		if err := c.service.Process(context.Background(), jobID); err != nil {
 			log.Printf("toonify job %s failed: %v", jobID, err)
