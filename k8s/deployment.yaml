@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: asia-south1-docker.pkg.dev/swift-delight-441118-c4/cloud-run-source-deploy/frameverse-backend:latest
+          image: frameverse-backend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
@@ -30,18 +30,24 @@ spec:
               value: "8080"
             - name: ENVIRONMENT
               value: "production"
-            - name: GCP_PROJECT_ID
-              value: "swift-delight-441118-c4"
             - name: GCP_LOCATION
               value: "global"
             - name: GEMINI_MODEL
               value: "gemini-omni-flash-preview"
-            - name: GCS_BUCKET_NAME
-              value: "frameverse-videos-gfh"
             - name: MONGO_DATABASE
               value: "frameverse"
             - name: AUTH_JWKS_URL
               value: "http://frameverse-auth.default.svc.cluster.local:8080/.well-known/jwks.json"
+            - name: GCP_PROJECT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: frameverse-backend-secret
+                  key: gcp-project-id
+            - name: GCS_BUCKET_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: frameverse-backend-secret
+                  key: gcs-bucket-name
             - name: MONGO_URI
               valueFrom:
                 secretKeyRef:

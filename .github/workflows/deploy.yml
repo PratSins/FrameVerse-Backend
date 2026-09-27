@@ -59,9 +59,11 @@ jobs:
         env:
           MONGO_URI: ${{ secrets.MONGO_URI || 'mongodb://frameverse:qwr%40123.764@mongo.default.svc.cluster.local:27017/?authSource=admin' }}
         run: |
-          # 1. Update or create the MongoDB connection secret
+          # 1. Update or create the backend configuration secrets
           kubectl create secret generic frameverse-backend-secret \
             --from-literal=mongo-uri="${MONGO_URI}" \
+            --from-literal=gcp-project-id="${{ secrets.GCP_PROJECT_ID || env.PROJECT_ID }}" \
+            --from-literal=gcs-bucket-name="${{ secrets.GCS_BUCKET_NAME || 'frameverse-videos-gfh' }}" \
             --dry-run=client -o yaml | kubectl apply -f -
 
           # 2. Apply deployment and service manifests
