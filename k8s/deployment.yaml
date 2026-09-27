@@ -53,6 +53,12 @@ spec:
                 secretKeyRef:
                   name: frameverse-backend-secret
                   key: mongo-uri
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/etc/gcp/key.json"
+          volumeMounts:
+            - name: gcp-key-volume
+              mountPath: /etc/gcp
+              readOnly: true
           resources:
             requests:
               cpu: 50m
@@ -72,6 +78,13 @@ spec:
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 15
+      volumes:
+        - name: gcp-key-volume
+          secret:
+            secretName: frameverse-backend-secret
+            items:
+              - key: key.json
+                path: key.json
 ---
 apiVersion: v1
 kind: Service
