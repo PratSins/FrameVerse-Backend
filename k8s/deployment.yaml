@@ -9,8 +9,8 @@ spec:
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: frameverse-backend
@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: frameverse-backend:latest
+          image: asia-south1-docker.pkg.dev/swift-delight-441118-c4/cloud-run-source-deploy/frameverse-backend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
@@ -55,11 +55,11 @@ spec:
                   key: mongo-uri
           resources:
             requests:
-              cpu: 100m
-              memory: 128Mi
+              cpu: 50m
+              memory: 64Mi
             limits:
-              cpu: 500m
-              memory: 512Mi
+              cpu: 250m
+              memory: 256Mi
           readinessProbe:
             httpGet:
               path: /healthz
